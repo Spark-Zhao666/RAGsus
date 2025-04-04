@@ -43,14 +43,15 @@ class Chat_QA_chain_self:
         self.embedding = embedding
         self.embedding_key = embedding_key
         
-        self.default_template_rq = """基于以下提供的上下文信息，以专业的客服风格回答用户的问题。
-        回答总是以'根据知识库以及你的问题，我向您提供以下答案：'；
-        回答的内容应该是事实，而不是猜测；
-        回答的内容尽量不分点表示而是完整地表达。
-        如果无法找到确切的答案，请礼貌地告知用户您无法提供相关信息，但会尽力协助解决。
-        {context}
-        用户问题: {question}
-        """
+        self.default_template_rq = """Based on the context provided, answer the user's problem in the style of a professional psychatrist.
+            Be sure to provide clear, concise, and accurate information.
+            Be sure to start your answer with the sentence 'Based on the knowledge I have gathered and your question, here are some possible answers:'
+            The answer should be fact-based, not a guess.
+            Make sure to express the answer not in bullet points but in a complete sentence.
+            If you cannot find an exact answer, please be polite and inform the user that you cannot provide relevant information, but will do our best to assist.
+            {context}
+            User question: {question}
+            """
 
         self.vectordb = get_vectordb(self.file_path, self.persist_path, self.embedding,self.embedding_key)
 

@@ -76,7 +76,8 @@ class Model_center():
                                                                                  persist_path=persist_path, 
                                                                                  embedding=embedding)
             chain = self.chat_qa_chain_self[(model, embedding)]
-            return "", chain.answer(question=question, temperature=temperature, top_k=top_k)
+            ans = chain.answer(question=question, temperature=temperature, top_k=top_k)
+            return "", ans
         except Exception as e:
             return e, chat_history
         
@@ -179,7 +180,7 @@ def respond(message, chat_history, llm, history_len=3, temperature=0.1, max_toke
         
 
 def test():
-    question = "什么是蘑菇书(easyrl)？"
+    question = "How are you?"
     model = "deepseek-chat"
     temperature = 0.7
     top_k = 3
@@ -189,7 +190,7 @@ def test():
     # 调用 qa_chain_self_answer 方法
     chat_history = []
 
-    response, chat_history = model_center.qa_chain_self_answer(
+    response, chat_history = model_center.chat_qa_chain_selfqa_chain_self_answer(
         question=question,
         model=model,
         temperature=temperature,
@@ -201,7 +202,7 @@ def test():
 
 model_center = Model_center()
 
-block = gr.Blocks()
+block = gr.Blocks(theme="soft")
 with block as demo:
     with gr.Row(equal_height=True):
         # # 中间的图标
@@ -217,7 +218,8 @@ with block as demo:
     with gr.Row():
         with gr.Column(scale=4):
             # 聊天记录框
-            chatbot = gr.Chatbot(height=400, show_copy_button=True, show_share_button=True, avatar_images=(AVATAR_PATH, BOT_AVATAR_PATH))
+            default_chat_history = [("System","Hi, TBD here, how is your day?")]
+            chatbot = gr.Chatbot(default_chat_history,type="tuples", height=400, show_copy_button=True, show_share_button=True, avatar_images=(AVATAR_PATH, BOT_AVATAR_PATH))
             # 输入框
             msg = gr.Textbox(label="Prompt/问题")
 
@@ -225,7 +227,7 @@ with block as demo:
                 # 三种对话模式的按钮
                 db_with_his_btn = gr.Button("Chat db with history")
                 db_wo_his_btn = gr.Button("Chat db without history")
-                llm_btn = gr.Button("Chat with llm")
+                # llm_btn = gr.Button("Chat with llm")
             
             with gr.Row():
                 # 清除按钮
@@ -233,15 +235,17 @@ with block as demo:
                                        value="Clear console")
         
         with gr.Column(scale=1):
-            # 上传知识功能
-            file = gr.File(label='请选择知识库目录', file_count='directory',
-                           file_types=['.txt', '.md', '.docx', '.pdf'])
-            with gr.Row():
-                # 将知识向量化的按钮
-                init_db_button = gr.Button("知识库文件向量化")
+            # # 上传知识功能
+            # file = gr.File(label='请选择知识库目录', file_count='directory',
+            #                file_types=['.txt', '.md', '.docx', '.pdf'])
+            # with gr.Row():
+            #     # 将知识向量化的按钮
+            #     init_db_button = gr.Button("知识库文件向量化")
             
             # 参数配置栏
-            model_argument = gr.Accordion("参数配置", open=False)
+            icon = gr.Image(value=BOT_AVATAR_PATH, scale=1, min_width=10, show_label=False, show_download_button=False, container=False, show_fullscreen_button=False)
+
+            model_argument = gr.Accordion("参数配置", open=True)
             with model_argument:
                 temperature = gr.Slider(minimum=0, 
                                         maximum=1, 
@@ -283,11 +287,11 @@ with block as demo:
 
         ###为每个按钮绑定事件
         # 将知识向量化的按钮绑定事件
-        init_db_button.click(
-            create_db_info, 
-            inputs=[file, embeddings], 
-            outputs=[msg], 
-            ) 
+        # init_db_button.click(
+        #     create_db_info, 
+        #     inputs=[file, embeddings], 
+        #     outputs=[msg], 
+        #     ) 
         
         # 历史数据对话的点击事件
         db_with_his_btn.click(
@@ -304,35 +308,35 @@ with block as demo:
             outputs=[msg, chatbot]
         )
 
-        db_wo_his_btn.click(
-            model_center.qa_chain_self_answer,
-            inputs=[
-                msg,
-                chatbot,
-                llm,
-                embeddings,
-                temperature,
-                top_k,
-            ],
-            outputs=[msg, chatbot]
-        )
+        # db_wo_his_btn.click(
+        #     model_center.qa_chain_self_answer,
+        #     inputs=[
+        #         msg,
+        #         chatbot,
+        #         llm,
+        #         embeddings,
+        #         temperature,
+        #         top_k,
+        #     ],
+        #     outputs=[msg, chatbot]
+        # )
 
-        llm_btn.click(
-            respond,
-            inputs=[
-                msg,
-                chatbot,
-                llm,
-                history_len,
-                temperature
-            ],
-            outputs=[msg, chatbot],
-            show_progress="minimal"
-        )
+        # llm_btn.click(
+        #     respond,
+        #     inputs=[
+        #         msg,
+        #         chatbot,
+        #         llm,
+        #         history_len,
+        #         temperature
+        #     ],
+        #     outputs=[msg, chatbot],
+        #     show_progress="minimal"
+        # )
 
         # 设置文本框提交事件，默认使用的回答是qa_chain_self_answer
         msg.submit(
-            model_center.qa_chain_self_answer,
+            model_center.chat_qa_chain_self_answer, 
             inputs=[
                 msg,
                 chatbot,
@@ -340,6 +344,7 @@ with block as demo:
                 embeddings,
                 temperature,
                 top_k,
+                history_len
             ],
             outputs=[msg, chatbot],
             show_progress="minimal"
@@ -347,13 +352,11 @@ with block as demo:
 
         # 点击后清空后端存储的聊天记录
         clear.click(model_center.clear_history)
-
     gr.Markdown("""提醒：<br>
     1. 目前large language model只有deepseek-chat可用
     2. 目前embedding model只有openai-embedding可用
     """)
 
-            
 gr.close_all()
 # 启动新的 Gradio 应用，设置分享功能为 True，并使用环境变量 PORT1 指定服务器端口。
 # demo.launch(share=True, server_port=int(os.environ['PORT1']))
