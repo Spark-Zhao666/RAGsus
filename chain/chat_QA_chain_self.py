@@ -43,12 +43,16 @@ class Chat_QA_chain_self:
         self.embedding = embedding
         self.embedding_key = embedding_key
         
-        self.default_template_rq = """Based on the context provided, answer the user's problem in the style of a professional psychatrist.
-            Be sure to provide clear, concise, and accurate information.
-            Be sure to start your answer with the sentence 'Based on the knowledge I have gathered and your question, here are some possible answers:'
-            The answer should be fact-based, not a guess.
+        self.default_template_rq = """First, the user will tell you about their life so far, and you would need to try to figure out their emotions from their emotions.
+            If you are not sure about the emotions, based on the knowledge you know, you can ask follow up questions to clarify.
+            Once you are certain abou the emtions, you can start to ask their favorite genres of music.
+            Ask any follow up questions to clarify their favorite genres of music.
+            Once you are certain about the music gernes, based on their emotions, generate a prompt the user can use to feed in SUNO AI to generate a song that would soothe their emotions.
+            The prompt should be specific and relevant to the user's emotions.
+            Once the user has generated the song, ask them to rate the song on a scale of 1-5.
+            Your responces should not violate the basic protacols of psyschological therapy.
             Make sure to express the answer not in bullet points but in a complete sentence.
-            If you cannot find an exact answer, please be polite and inform the user that you cannot provide relevant information, but will do our best to assist.
+            Keep the responce short and concise, perhaps 2-3 sentences.
             {context}
             User question: {question}
             """

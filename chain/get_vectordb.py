@@ -1,5 +1,4 @@
 import sys
-
 from langchain_openai import OpenAIEmbeddings
 import os
 from make_database.create_db import create_db,load_knowledge_db
