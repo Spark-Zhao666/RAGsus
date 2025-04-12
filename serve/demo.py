@@ -218,7 +218,7 @@ with block as demo:
     with gr.Row():
         with gr.Column(scale=4):
             # 聊天记录框
-            default_chat_history = [("System","Hi, TBD here, how is your day?")]
+            default_chat_history = [(None, "Hi, TBD here, how is your day?")]
             chatbot = gr.Chatbot(default_chat_history,type="tuples", height=400, show_copy_button=True, show_share_button=True, avatar_images=(AVATAR_PATH, BOT_AVATAR_PATH))
             # 输入框
             msg = gr.Textbox(label="Prompt/问题")
@@ -262,8 +262,8 @@ with block as demo:
                                   interactive=True)
 
                 history_len = gr.Slider(minimum=0, 
-                                        maximum=5,
-                                        value=3,
+                                        maximum=200,
+                                        value=100,
                                         step=1,
                                         label="history len",
                                         interactive=True)
