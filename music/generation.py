@@ -1,76 +1,57 @@
 import requests
 import time
 import os
+from dotenv import load_dotenv
+load_dotenv()
 
-# 配置API参数
-API_KEY = os.getenv("SUNO_API")  # 从AceData或302ai平台获取[1,3](@ref)
-API_ENDPOINT = "https://api.acedata.cloud/suno/audios"  # 或使用302ai的接口[1](@ref)
+suno_api_key = os.getenv("SUNO_API")
 
-def generate_song(prompt, lyrics, style="流行"):
-    """生成歌曲"""
-    headers = {
-        "authorization": f"Bearer {API_KEY}",
-        "content-type": "application/json"
-    }
-    
+def generate_music(prompt,suno_api_key):
+    url = "https://dzwlai.com/apiuser/_open/suno/music/generate"
+
     payload = {
-        "action": "generate",
-        "prompt": prompt,
-        "model": "chirp-v3-5",  # 推荐使用最新模型[1](@ref)
-        "lyric": lyrics,
-        "custom": True,
-        "style": style,
-        "instrumental": False
+        "expectAiModel": "suno",
+        "inputType": "10",
+        "mvVersion": "chirp-v4",
+        "makeInstrumental": True,
+        "gptDescriptionPrompt": prompt,
+        "callbackUrl": ""
+    }
+    headers = {
+        "x-token": suno_api_key,
+        "x-userId": "1000",
+        "Accept": "*/*",
+        "Accept-Encoding": "gzip, deflate, br",
+        "User-Agent": "PostmanRuntime-ApipostRuntime/1.1.0",
+        "Connection": "keep-alive",
+        "Content-Type": "application/json"
     }
 
-    response = requests.post(API_ENDPOINT, json=payload, headers=headers)
-    
-    if response.status_code == 200:
-        data = response.json()
-        if data.get('success'):
-            return data['data']  # 返回生成的音频信息[1,3](@ref)
-        else:
-            raise Exception(f"生成失败: {data.get('message')}")
-    else:
-        raise Exception(f"API请求失败: {response.status_code}")
+    response = requests.request("POST", url, json=payload, headers=headers)
 
-def download_audio(audio_info, save_path="songs"):
-    """下载音频文件"""
-    os.makedirs(save_path, exist_ok=True)
-    
-    for track in audio_info:
-        mp3_url = track.get('audio_url')
-        title = track.get('title', 'untitled').replace(' ', '_')
-        
-        try:
-            response = requests.get(mp3_url)
-            filename = f"{save_path}/{title}.mp3"
-            
-            with open(filename, 'wb') as f:
-                f.write(response.content)
-            print(f"下载完成: {filename}")
-        except Exception as e:
-            print(f"下载失败: {str(e)}")
-
-# 使用示例
-if __name__ == "__main__":
-    lyrics = """[Verse]
-让我给您拜个年，祝你生活蜜蜜甜
-来年有钱又有闲，新年愿望都实现
-[Chorus]
-点鞭炮，福星照，财源广进无烦扰
-愿君一年好运道，全家团圆真热闹！"""
-    
+    # 2. 解析响应获取任务ID（假设响应包含ID字段）
     try:
-        # 生成歌曲
-        result = generate_song(
-            prompt="一首春节的拜年歌曲",
-            lyrics=lyrics,
-            style="传统民谣"
-        )
-        
-        # 下载音频
-        download_audio(result)
-        
+        response_data = response.json()
+        task_id = response_data["data"]["taskBatchId"]
+        if not task_id:
+            raise ValueError("Can't get task ID")
     except Exception as e:
-        print(f"执行出错: {str(e)}")
+        raise RuntimeError("Unexpected response format")
+
+    # 3. 轮询获取结果（根据API实际情况调整轮询逻辑）
+    result_url = f"https://dzwlai.com/apiuser/_open/suno/music/getState?taskBatchId={task_id}"
+    # max_retries = 10
+    retry_interval = 10  # 秒
+
+    print("Pending...")
+    while True:
+        time.sleep(retry_interval)
+        result_response = requests.request("GET", result_url, json=payload, headers=headers)
+        result_data = result_response.json()["data"]
+        
+        if result_data['taskStatus'] == "finished":
+            # 4. 提取音乐URL（根据实际API响应结构调整）
+            audio_url = result_data["items"][0]['cld2AudioUrl']  # 或可能是video_url/image_url等
+            return audio_url
+if __name__ == '__main__':
+    print(generate_music("A beautiful day in Paris playing the violin", suno_api_key))
