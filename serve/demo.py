@@ -9,6 +9,7 @@ from llm.call_llm import get_completion
 from make_database.create_db import create_db_info
 from chain.chat_QA_chain_self import Chat_QA_chain_self
 from chain.QA_chain_self import QA_chain_self
+from music.generation import generate_music
 import re
 
 
@@ -62,7 +63,7 @@ class Model_center():
                                   file_path: str = DEFAULT_DB_PATH, 
                                   persist_path: str = DEFAULT_PERSIST_PATH):
         if question == None or len(question) < 1:
-            return "", chat_history
+            return "", chat_history, None
         
        
         try:
@@ -77,9 +78,14 @@ class Model_center():
                                                                                  embedding=embedding)
             chain = self.chat_qa_chain_self[(model, embedding)]
             ans = chain.answer(question=question, temperature=temperature, top_k=top_k)
-            return "", ans
+            last_responce = ans[-1][1]
+            if "Here is a SUNO AI prompt" in last_responce:
+                music_prompt = re.findall(r'"(.*?)"', last_responce)
+                return "", ans, generate_music(music_prompt)
+            else:
+                return "", ans, None
         except Exception as e:
-            return e, chat_history
+            return e, chat_history, None
         
     def qa_chain_self_answer(self, 
                              question: str, 
@@ -220,13 +226,14 @@ with block as demo:
             # 聊天记录框
             default_chat_history = [(None, "Hi, TBD here, how is your day?")]
             chatbot = gr.Chatbot(default_chat_history,type="tuples", height=400, show_copy_button=True, show_share_button=True, avatar_images=(AVATAR_PATH, BOT_AVATAR_PATH))
+            song = gr.Audio(format="mp3", scale=0.5, label="generated song")
             # 输入框
             msg = gr.Textbox(label="Prompt/问题")
 
             with gr.Row():
                 # 三种对话模式的按钮
                 db_with_his_btn = gr.Button("Chat db with history")
-                db_wo_his_btn = gr.Button("Chat db without history")
+                # db_wo_his_btn = gr.Button("Chat db without history")
                 # llm_btn = gr.Button("Chat with llm")
             
             with gr.Row():
@@ -305,7 +312,8 @@ with block as demo:
                 top_k,
                 history_len
             ],
-            outputs=[msg, chatbot]
+            outputs=[msg, chatbot, song],
+            show_progress="minimal"
         )
 
         # db_wo_his_btn.click(
@@ -346,7 +354,7 @@ with block as demo:
                 top_k,
                 history_len
             ],
-            outputs=[msg, chatbot],
+            outputs=[msg, chatbot, song],
             show_progress="minimal"
         )
 

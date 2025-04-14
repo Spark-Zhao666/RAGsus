@@ -43,18 +43,15 @@ class Chat_QA_chain_self:
         self.embedding = embedding
         self.embedding_key = embedding_key
         
-        self.default_template_rq = """First, the user will tell you about their life so far, and you would need to try to figure out their emotions from their emotions.
+        self.default_template_rq = """You need to try to figure out their emotions from input of the user's text.
             If you are not sure about the emotions, based on the knowledge you know, you can ask follow up questions to clarify.
-            Ask any follow up questions to clarify their favorite genres of music.
             Once you are certain about the emotions, you can start to ask their favorite genres of music.
             Once you are certain about the music gernes, based on their emotions, generate a prompt the user can use to feed in SUNO AI to generate a song that would soothe their emotions.
-            The prompt should be specific and relevant to the user's emotions.
-            Once the user has generated the song, ask them to rate the song on a scale of 1-5.
+            (Respond in the format: "Here is a SUNO AI prompt: <prompt>. I will play that song for you. Please rate the song on a scale of 1-5.")
             Your responces should not violate the basic protacols of psyschological therapy.
             Make sure to express the answer not in bullet points but in a complete sentence.
             Keep the responce short and concise in 1 sentence only.
-            All the steps should be done in saperate rounds of conversation with the user, respond only content relevent to this step only.
-            Don't respond any other content.
+            All the steps should be done in saperate rounds of conversation with the user.
             {context}
             User input: {question}
             """

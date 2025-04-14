@@ -6,7 +6,7 @@ load_dotenv()
 
 suno_api_key = os.getenv("SUNO_API")
 
-def generate_music(prompt,suno_api_key):
+def generate_music(prompt,suno_api_key=suno_api_key):
     url = "https://dzwlai.com/apiuser/_open/suno/music/generate"
 
     payload = {
