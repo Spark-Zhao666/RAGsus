@@ -51,6 +51,7 @@ class Model_center():
     def __init__(self):
         self.chat_qa_chain_self = {}
         self.qa_chain_self = {}
+        self.music_history = []
 
     def chat_qa_chain_self_answer(self, 
                                   question: str, 
@@ -63,7 +64,7 @@ class Model_center():
                                   file_path: str = DEFAULT_DB_PATH, 
                                   persist_path: str = DEFAULT_PERSIST_PATH):
         if question == None or len(question) < 1:
-            return "", chat_history, None
+            return "", chat_history, None if len(self.music_history) == 0 else self.music_history[-1]
         
        
         try:
@@ -81,11 +82,13 @@ class Model_center():
             last_responce = ans[-1][1]
             if "Here is a SUNO AI prompt" in last_responce:
                 music_prompt = re.findall(r'"(.*?)"', last_responce)
-                return "", ans, generate_music(music_prompt)
+                new_music = generate_music(music_prompt[0])
+                self.music_history.append(new_music)
+                return "", ans, new_music
             else:
-                return "", ans, None
+                return "", ans, None if len(self.music_history) == 0 else self.music_history[-1]
         except Exception as e:
-            return e, chat_history, None
+            return e, chat_history, None if len(self.music_history) == 0 else self.music_history[-1]
         
     def qa_chain_self_answer(self, 
                              question: str, 
@@ -216,7 +219,7 @@ with block as demo:
 
         # 名字
         with gr.Column(scale=2):
-            gr.Markdown("""<h1><center>问答机器人</center></h1>
+            gr.Markdown("""<h1><center>Music Chatbot</center></h1>
                         """)
         # # Logo
         # gr.Image(value=DATAWHALE_LOGO_PATH, scale=1, min_width=10, show_label=False, show_download_button=False, container=False)
@@ -226,7 +229,7 @@ with block as demo:
             # 聊天记录框
             default_chat_history = [(None, "Hi, TBD here, how is your day?")]
             chatbot = gr.Chatbot(default_chat_history,type="tuples", height=400, show_copy_button=True, show_share_button=True, avatar_images=(AVATAR_PATH, BOT_AVATAR_PATH))
-            song = gr.Audio(format="mp3", scale=0.5, label="generated song")
+            song = gr.Audio(format="mp3", scale=0.5, label="generated song", autoplay=True)
             # 输入框
             msg = gr.Textbox(label="Prompt/问题")
 
