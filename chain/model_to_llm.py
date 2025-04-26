@@ -14,6 +14,7 @@ def model_to_llm(model:str=None, temperature:float=0.0, appid:str=None, api_key:
         llm = ChatOpenAI(model_name = model, 
                          temperature = temperature , 
                          openai_api_key = api_key,
+                         streaming = True,
                          base_url="https://api.deepseek.com")
     
     return llm

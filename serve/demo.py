@@ -51,8 +51,6 @@ class Model_center():
     def __init__(self):
         self.chat_qa_chain_self = {}
         self.qa_chain_self = {}
-        self.music_history = []
-
     def chat_qa_chain_self_answer(self, 
                                   question: str, 
                                   chat_history: list = [], 
@@ -62,9 +60,9 @@ class Model_center():
                                   top_k: int = 4, 
                                   history_len: int = 3, 
                                   file_path: str = DEFAULT_DB_PATH, 
-                                  persist_path: str = DEFAULT_PERSIST_PATH):
+                                  persist_path: str = DEFAULT_PERSIST_PATH, stream=True):
         if question == None or len(question) < 1:
-            return "", chat_history, None if len(self.music_history) == 0 else self.music_history[-1]
+            return "", chat_history
         
        
         try:
@@ -76,19 +74,26 @@ class Model_center():
                                                                                  chat_history=chat_history, 
                                                                                  file_path=file_path, 
                                                                                  persist_path=persist_path, 
-                                                                                 embedding=embedding)
+                                                                                 embedding=embedding,
+                                                                                 stream=stream)
             chain = self.chat_qa_chain_self[(model, embedding)]
-            ans = chain.answer(question=question, temperature=temperature, top_k=top_k)
-            last_responce = ans[-1][1]
-            if "Here is a SUNO AI prompt" in last_responce:
-                music_prompt = re.findall(r'"(.*?)"', last_responce)
-                new_music = generate_music(music_prompt[0])
-                self.music_history.append(new_music)
-                return "", ans, new_music
+            chat_history = chat_history + [[question, ""]]
+            response = chain.answer(question, temperature=temperature, top_k=top_k, stream=stream)
+            if stream:
+                previous_content = ""
+                for chunk in response:
+                    if chunk:  # 确保 chunk 不为空
+                        current_content = chunk[len(previous_content):]
+                        previous_content = chunk
+                        chat_history[-1][1] += current_content  # 直接追加 chunk
+                        yield "", chat_history
             else:
-                return "", ans, None if len(self.music_history) == 0 else self.music_history[-1]
+                # 非流式模式直接返回完整回答
+                answer = next(response) if hasattr(response, "__iter__") else response
+                chat_history[-1][1] = answer
+                yield "", chat_history
         except Exception as e:
-            return e, chat_history, None if len(self.music_history) == 0 else self.music_history[-1]
+            return e, chat_history
         
     def qa_chain_self_answer(self, 
                              question: str, 
@@ -186,7 +191,17 @@ def respond(message, chat_history, llm, history_len=3, temperature=0.1, max_toke
     
     except Exception as e:
         return e, chat_history
-        
+
+music_history = []
+def check_music(history):
+    last_responce = history[-1][1]
+    if "Here is a SUNO AI prompt" in last_responce:
+        music_prompt = re.findall(r'"(.*?)"', last_responce)
+        new_music = generate_music(music_prompt[0])
+        music_history.append(new_music)
+        return new_music
+    else:
+        return None if len(music_history) == 0 else music_history[-1]
 
 def test():
     question = "How are you?"
@@ -315,9 +330,11 @@ with block as demo:
                 top_k,
                 history_len
             ],
-            outputs=[msg, chatbot, song],
+            outputs=[msg, chatbot],
             show_progress="minimal"
-        )
+        ).then(check_music, 
+                inputs=[chatbot], 
+                outputs=[song])
 
         # db_wo_his_btn.click(
         #     model_center.qa_chain_self_answer,
@@ -357,9 +374,11 @@ with block as demo:
                 top_k,
                 history_len
             ],
-            outputs=[msg, chatbot, song],
+            outputs=[msg, chatbot],
             show_progress="minimal"
-        )
+        ).then(check_music, 
+                inputs=[chatbot], 
+                outputs=[song])
 
         # 点击后清空后端存储的聊天记录
         clear.click(model_center.clear_history)
