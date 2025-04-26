@@ -182,38 +182,3 @@ def create_gradio_interface(chat_qa_chain):
         )
 
     return interface
-
-if __name__ == "__main__":
-    # 测试 Chat_QA_chain_self 的流式回答功能
-    model = "deepseek-chat"
-    temperature = 0.7
-    top_k = 3
-    chat_history = []
-    file_path = "../knowledge_db"
-    persist_path = "../vector_db/chroma"
-    # appid = "your_appid"
-    # api_key = "sk-99e8b6b0c9d64927885f845cf447d914"
-    # Spark_api_secret = "your_spark_secret"
-    # Wenxin_secret_key = "your_wenxin_secret"
-
-    # 初始化 Chat_QA_chain_self 实例
-    chat_qa_chain = Chat_QA_chain_self(
-        model=model,
-        temperature=temperature,
-        top_k=top_k,
-        chat_history=chat_history,
-        file_path=file_path,
-        persist_path=persist_path,
-        api_key=None
-    )
-
-    interface = create_gradio_interface(chat_qa_chain)
-    interface.launch(share=False)
-    # # 测试问题
-    # question = "你能推荐一首舒缓情绪的音乐吗？"
-
-    # # 打印最终的聊天历史记录
-    # print("\n\n最终聊天历史记录：")
-    # for q, a in chat_qa_chain.chat_history:
-    #     print(f"问题: {q}")
-    #     print(f"回答: {a}")
